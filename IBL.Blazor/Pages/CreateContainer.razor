@@ -1,0 +1,80 @@
+@page "/create-container"
+@inject ApiClient Api
+@inject AuthStateService Auth
+
+<h1>Crea container</h1>
+
+@if (!Auth.IsInitialized)
+{
+    <div class="ibl-card">Verifica sessione in corso...</div>
+}
+else if (!IsAuthorized)
+{
+    <div class="alert alert-warning">Solo l'<strong>admin</strong> può creare nuovi container.</div>
+    <a class="btn btn-primary" href="/login">Vai al login</a>
+}
+else
+{
+    <div class="ibl-card">
+        <EditForm Model="form" OnValidSubmit="CreateContainerAsync">
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">Container Number</label><InputText @bind-Value="form.ContainerNumber" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">Agency Code</label><InputText @bind-Value="form.AgencyCode" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">Agent Code</label><InputText @bind-Value="form.AgentCode" class="form-control" /></div>
+                <div class="col-md-4"><label class="form-label">Category Code</label><InputNumber @bind-Value="form.CategoryCode" class="form-control" /></div>
+                <div class="col-md-8">
+                    <label class="form-label">Porto attuale</label>
+                    <select class="form-select" @bind="form.CurrentPortId">
+                        @foreach (var port in ports)
+                        {
+                            <option value="@port.Id">@port.DisplayName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <button class="btn btn-success mt-3" type="submit">Crea container</button>
+        </EditForm>
+
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="alert alert-info mt-3">@message</div>
+        }
+    </div>
+}
+
+@code {
+    private CreateContainerRequest form = new();
+    private string? message;
+    private List<PortDto> ports = new();
+    private bool _loaded;
+    private bool IsAuthorized => Auth.CurrentUser?.Role == UserRole.Admin;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_loaded || !Auth.IsInitialized || !IsAuthorized)
+        {
+            return;
+        }
+
+        _loaded = true;
+        ports = await Api.GetPortsAsync();
+        if (ports.Any())
+        {
+            form.CurrentPortId = ports.First().Id;
+        }
+        StateHasChanged();
+    }
+
+    private async Task CreateContainerAsync()
+    {
+        try
+        {
+            var id = await Api.CreateContainerAsync(form);
+            message = $"Container creato con ID {id}.";
+        }
+        catch (Exception ex)
+        {
+            message = ex.Message;
+        }
+    }
+}

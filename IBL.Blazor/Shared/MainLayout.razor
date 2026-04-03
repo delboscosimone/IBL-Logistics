@@ -1,0 +1,88 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthStateService Auth
+@inject BookingRegistryService Registry
+@inject NavigationManager Nav
+
+<PageTitle>IBL - International BlueHarbor Logistics</PageTitle>
+
+<div class="page ibl-shell">
+    <header class="ibl-header border-bottom">
+        <div class="container-fluid px-4 py-3 d-flex flex-column gap-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <a class="ibl-brand text-decoration-none" href="/">IBL</a>
+                    <div class="text-muted small">International BlueHarbor Logistics · Smart container booking & reefer monitoring</div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                    @if (!Auth.IsInitialized)
+                    {
+                        <span class="text-muted small">Verifica sessione...</span>
+                    }
+                    else if (Auth.CurrentUser is null)
+                    {
+                        <a class="btn btn-primary" href="/login">Login</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-primary" href="/dashboard">Dashboard</a>
+                        <div class="text-end me-2">
+                            <div class="fw-semibold">@Auth.CurrentUser.FullName</div>
+                            <div class="small text-muted">@Auth.CurrentUser.RoleLabel · @Auth.CurrentUser.CompanyName</div>
+                        </div>
+                        <button class="btn btn-outline-primary" @onclick="LogoutAsync">Esci dal profilo</button>
+                    }
+                </div>
+            </div>
+            <NavMenu />
+        </div>
+    </header>
+
+    <main class="container-fluid px-4 py-4">
+        <article class="content">
+            @if (!Auth.IsInitialized)
+            {
+                <div class="ibl-card">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Inizializzazione sessione e dati locali...
+                </div>
+            }
+            else
+            {
+                @Body
+            }
+        </article>
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Auth.OnChange += HandleAuthChange;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await Auth.InitializeAsync();
+        await Registry.InitializeAsync();
+        StateHasChanged();
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    private void HandleAuthChange() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Auth.OnChange -= HandleAuthChange;
+    }
+}

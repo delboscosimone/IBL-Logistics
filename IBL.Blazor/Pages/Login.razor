@@ -1,0 +1,118 @@
+@page "/login"
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+<h1>Login e registrazione</h1>
+<p class="lead">Accedi con un account demo oppure registra un nuovo cliente IBL con anagrafica completa.</p>
+
+<div class="row g-4 mt-1">
+    <div class="col-lg-5">
+        <div class="ibl-card h-100">
+            <h4>Accedi</h4>
+            <EditForm Model="loginModel" OnValidSubmit="HandleLoginAsync">
+                <div class="mb-3"><label class="form-label">Email</label><InputText class="form-control" @bind-Value="loginModel.Email" /></div>
+                <div class="mb-3"><label class="form-label">Password</label><InputText class="form-control" type="password" @bind-Value="loginModel.Password" /></div>
+                <button class="btn btn-primary" type="submit">Accedi</button>
+            </EditForm>
+
+            @if (!string.IsNullOrWhiteSpace(loginMessage))
+            {
+                <div class="alert @(loginOk ? "alert-success" : "alert-danger") mt-3">@loginMessage</div>
+            }
+
+            <div class="ibl-mini-card mt-3">
+                <strong>Account demo</strong>
+                <ul class="mb-0 mt-2 small">
+                    <li>Admin → admin@ibl.local / Admin123!</li>
+                    <li>Dipendente → employee@ibl.local / Employee123!</li>
+                    <li>Cliente → customer@ibl.local / Customer123!</li>
+                </ul>
+                <hr />
+                <div class="small">
+                    <strong>Profilo cliente demo aggiornato</strong><br />
+                    Aurora Foods<br />
+                    Email: customer@ibl.local<br />
+                    Azienda: Aurora Global Foods<br />
+                    P.IVA / CF: RRAFLD00A01F205X
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="ibl-card h-100">
+            <h4>Registrazione cliente</h4>
+            <EditForm Model="registerModel" OnValidSubmit="HandleRegisterAsync">
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Nome completo</label><InputText class="form-control" @bind-Value="registerModel.FullName" /></div>
+                    <div class="col-md-6"><label class="form-label">Azienda</label><InputText class="form-control" @bind-Value="registerModel.CompanyName" /></div>
+                    <div class="col-md-6"><label class="form-label">Partita IVA / Codice fiscale</label><InputText class="form-control" @bind-Value="registerModel.TaxCodeOrVatNumber" /></div>
+                    <div class="col-md-6"><label class="form-label">Email</label><InputText class="form-control" @bind-Value="registerModel.Email" /></div>
+                    <div class="col-md-6"><label class="form-label">Password</label><InputText class="form-control" type="password" @bind-Value="registerModel.Password" /></div>
+                </div>
+                <button class="btn btn-outline-primary mt-3" type="submit">Registra cliente</button>
+            </EditForm>
+
+            @if (!string.IsNullOrWhiteSpace(registerMessage))
+            {
+                <div class="alert @(registerOk ? "alert-success" : "alert-danger") mt-3">@registerMessage</div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginVm loginModel = new();
+    private RegisterVm registerModel = new();
+    private string? loginMessage;
+    private string? registerMessage;
+    private bool loginOk;
+    private bool registerOk;
+
+    protected override void OnParametersSet()
+    {
+        if (Auth.IsInitialized && Auth.CurrentUser is not null)
+        {
+            Nav.NavigateTo("/dashboard");
+        }
+    }
+
+    private async Task HandleLoginAsync()
+    {
+        (loginOk, loginMessage) = await Auth.LoginAsync(loginModel.Email, loginModel.Password);
+        if (loginOk)
+        {
+            Nav.NavigateTo("/dashboard");
+        }
+    }
+
+    private async Task HandleRegisterAsync()
+    {
+        try
+        {
+            var user = await Auth.RegisterCustomerAsync(registerModel.FullName, registerModel.Email, registerModel.Password, registerModel.CompanyName, registerModel.TaxCodeOrVatNumber);
+            registerOk = true;
+            registerMessage = $"Cliente creato con ID {user.Id}. Ora puoi effettuare il login.";
+            registerModel = new();
+        }
+        catch (Exception ex)
+        {
+            registerOk = false;
+            registerMessage = ex.Message;
+        }
+    }
+
+    private class LoginVm
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+
+    private class RegisterVm
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
+        public string TaxCodeOrVatNumber { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,71 @@
+@page "/containers"
+@inject ApiClient Api
+
+<h1>Container</h1>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="ibl-card">
+            <h4>Ricerca per ID</h4>
+            <InputNumber @bind-Value="containerId" class="form-control" />
+            <button class="btn btn-primary mt-3" @onclick="LoadContainer">Cerca container</button>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+        <div class="ibl-card">
+            <h4>Risultato</h4>
+            @if (isLoading)
+            {
+                <p>Caricamento...</p>
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="alert alert-danger">@error</div>
+            }
+            else if (container is null)
+            {
+                <p>Nessun container caricato.</p>
+            }
+            else
+            {
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Numero</dt><dd class="col-sm-8">@container.ContainerNumber</dd>
+                    <dt class="col-sm-4">Categoria</dt><dd class="col-sm-8">@container.ProductCategoryName (@container.ProductCategoryCode)</dd>
+                    <dt class="col-sm-4">Porto corrente</dt><dd class="col-sm-8">@container.CurrentPortName (@container.CurrentPortCode)</dd>
+                    <dt class="col-sm-4">Disponibilità</dt><dd class="col-sm-8">@(container.IsAvailable ? "Disponibile" : "Associato a booking")</dd>
+                    <dt class="col-sm-4">Peso totale</dt><dd class="col-sm-8">@container.TotalWeight</dd>
+                    <dt class="col-sm-4">Volume totale</dt><dd class="col-sm-8">@container.TotalVolume</dd>
+                    <dt class="col-sm-4">Setpoint T/H</dt><dd class="col-sm-8">@container.TemperatureSetpoint / @container.HumiditySetpoint</dd>
+                </dl>
+                <p class="small text-muted mt-3 mb-0">Agent code nascosto nella UI come richiesto.</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private int containerId = 1;
+    private bool isLoading;
+    private string? error;
+    private ContainerInfoDto? container;
+
+    private async Task LoadContainer()
+    {
+        isLoading = true;
+        error = null;
+        container = null;
+        try
+        {
+            container = await Api.GetContainerByIdAsync(containerId);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

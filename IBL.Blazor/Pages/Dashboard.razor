@@ -1,0 +1,39 @@
+@page "/dashboard"
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+@if (!Auth.IsInitialized)
+{
+    <div class="ibl-card">Caricamento dashboard...</div>
+}
+else if (Auth.CurrentUser is null)
+{
+    <div class="ibl-card">
+        <h1>Dashboard</h1>
+        <p>Per accedere alla dashboard devi effettuare il login.</p>
+        <a class="btn btn-primary" href="/login">Vai al login</a>
+    </div>
+}
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!Auth.IsInitialized || Auth.CurrentUser is null)
+        {
+            return;
+        }
+
+        var target = Auth.CurrentUser.Role switch
+        {
+            UserRole.Admin => "/admin",
+            UserRole.Employee => "/employee",
+            UserRole.Customer => "/customer",
+            _ => "/"
+        };
+
+        if (!string.Equals(Nav.Uri, Nav.ToAbsoluteUri(target).ToString(), StringComparison.OrdinalIgnoreCase))
+        {
+            Nav.NavigateTo(target);
+        }
+    }
+}

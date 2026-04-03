@@ -1,0 +1,125 @@
+@page "/customer"
+@inject AuthStateService Auth
+@inject BookingRegistryService Registry
+@inject ApiClient Api
+
+<h1>Area Cliente</h1>
+<p class="lead">Il cliente visualizza i booking a lui associati, con date di partenza/arrivo e container collegati.</p>
+
+@if (!Auth.IsInitialized)
+{
+    <div class="ibl-card">Verifica sessione in corso...</div>
+}
+else if (!IsAuthorized)
+{
+    <div class="alert alert-warning">Accesso consentito solo ai clienti.</div>
+}
+else if (Auth.CurrentUser is not null)
+{
+    <div class="ibl-card mt-3">
+        <h4>@Auth.CurrentUser.FullName</h4>
+        <div>Email: @Auth.CurrentUser.Email</div>
+        <div>Azienda: @Auth.CurrentUser.CompanyName</div>
+        <div>P.IVA / CF: @Auth.CurrentUser.TaxCodeOrVatNumber</div>
+    </div>
+
+    @if (loading)
+    {
+        <div class="alert alert-info mt-3">Caricamento dei booking in corso...</div>
+    }
+    else if (!customerBookings.Any())
+    {
+        <div class="alert alert-secondary mt-3">Non risultano booking collegati a questo cliente.</div>
+    }
+    else
+    {
+        <div class="row g-4 mt-1">
+            @foreach (var booking in customerBookings)
+            {
+                <div class="col-lg-6">
+                    <div class="ibl-card h-100">
+                        <h4>@booking.Booking.BookingNumber</h4>
+                        <div><strong>Porto partenza:</strong> @booking.Booking.OriginPortDisplay</div>
+                        <div><strong>Porto arrivo:</strong> @booking.Booking.DestinationPortDisplay</div>
+                        <div><strong>Data partenza:</strong> @booking.Booking.ShippingDate.ToString("dd/MM/yyyy")</div>
+                        <div><strong>Data arrivo:</strong> @booking.Booking.EstimatedArrivalDate.ToString("dd/MM/yyyy")</div>
+                        <div class="mt-3">
+                            <strong>Container referenziati</strong>
+                            @if (booking.Containers.Any())
+                            {
+                                <ul class="mt-2 mb-0">
+                                    @foreach (var container in booking.Containers)
+                                    {
+                                        <li>@container.ContainerNumber - @container.ProductCategoryName - @container.CurrentPortName</li>
+                                    }
+                                </ul>
+                            }
+                            else
+                            {
+                                <p class="mb-0 mt-2">Nessun dettaglio container disponibile.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private bool IsAuthorized => Auth.CurrentUser?.Role == UserRole.Customer;
+    private bool loading = true;
+    private List<CustomerBookingVm> customerBookings = new();
+    private bool _loaded;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_loaded || !Auth.IsInitialized || Auth.CurrentUser is null || !IsAuthorized)
+        {
+            return;
+        }
+
+        _loaded = true;
+        await LoadBookingsAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadBookingsAsync()
+    {
+        loading = true;
+        customerBookings.Clear();
+
+        var links = Registry.GetByCustomer(Auth.CurrentUser!.Id);
+        foreach (var link in links)
+        {
+            try
+            {
+                var booking = await Api.GetBookingByIdAsync(link.BookingId);
+                if (booking is null) continue;
+
+                var containers = new List<ContainerInfoDto>();
+                foreach (var containerId in link.ContainerIds)
+                {
+                    var container = await Api.GetContainerByIdAsync(containerId);
+                    if (container is not null)
+                    {
+                        containers.Add(container);
+                    }
+                }
+
+                customerBookings.Add(new CustomerBookingVm { Booking = booking, Containers = containers });
+            }
+            catch
+            {
+            }
+        }
+
+        loading = false;
+    }
+
+    private class CustomerBookingVm
+    {
+        public BookingSummaryDto Booking { get; set; } = new();
+        public List<ContainerInfoDto> Containers { get; set; } = new();
+    }
+}

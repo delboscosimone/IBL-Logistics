@@ -1,0 +1,29 @@
+@inject AuthStateService Auth
+
+<nav class="ibl-nav d-flex flex-wrap gap-2 align-items-center">
+    <NavLink class="ibl-nav-link" href="" Match="NavLinkMatch.All">Home</NavLink>
+    <NavLink class="ibl-nav-link" href="containers">Container</NavLink>
+    <NavLink class="ibl-nav-link" href="bookings">Booking</NavLink>
+    <NavLink class="ibl-nav-link" href="categories">Categorie MSC</NavLink>
+    <NavLink class="ibl-nav-link" href="telemetry">Telemetria</NavLink>
+
+    @if (Auth.CurrentUser is not null)
+    {
+        @if (Auth.CurrentUser.Role is UserRole.Employee or UserRole.Admin)
+        {
+            <NavLink class="ibl-nav-link" href="employee">Area Dipendente</NavLink>
+            <NavLink class="ibl-nav-link" href="create-booking">Nuovo booking</NavLink>
+        }
+
+        @if (Auth.CurrentUser.Role == UserRole.Admin)
+        {
+            <NavLink class="ibl-nav-link" href="admin">Area Admin</NavLink>
+            <NavLink class="ibl-nav-link" href="create-container">Crea container</NavLink>
+        }
+
+        @if (Auth.CurrentUser.Role == UserRole.Customer)
+        {
+            <NavLink class="ibl-nav-link" href="customer">Area Cliente</NavLink>
+        }
+    }
+</nav>

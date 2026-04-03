@@ -1,0 +1,339 @@
+@page "/create-booking"
+@inject ApiClient Api
+@inject AuthStateService Auth
+@inject BookingRegistryService Registry
+
+<h1>Nuovo booking operativo</h1>
+<p class="lead">Seleziona porto di partenza, porto di arrivo, date di viaggio e uno o più container disponibili nel porto scelto.</p>
+
+@if (!Auth.IsInitialized)
+{
+    <div class="ibl-card">Verifica sessione in corso...</div>
+}
+else if (!IsAuthorized)
+{
+    <div class="alert alert-warning">Devi effettuare il login come <strong>dipendente</strong> o <strong>admin</strong> per creare prenotazioni.</div>
+    <a class="btn btn-primary" href="/login">Vai al login</a>
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-xl-8">
+            <div class="ibl-card">
+                <EditForm Model="form" OnValidSubmit="CreateBookingAsync">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Booking Number</label>
+                            <InputText @bind-Value="form.BkNumber" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data partenza</label>
+                            <InputDate @bind-Value="ShippingDateProxy" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data arrivo stimata</label>
+                            <InputDate @bind-Value="form.EstimatedArrivalDate" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Cliente</label>
+                            <select class="form-select" @bind="SelectedCustomerIdProxy">
+                                @foreach (var customer in Customers)
+                                {
+                                    <option value="@customer.Id">@customer.FullName - @customer.CompanyName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Agency Code</label>
+                            <InputText @bind-Value="form.AgencyCode" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">Porto di partenza</label>
+                            <select class="form-select" @bind="OriginPortIdProxy">
+                                @foreach (var port in ports)
+                                {
+                                    <option value="@port.Id">@port.DisplayName</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Porto di arrivo</label>
+                            <select class="form-select" @bind="DestinationPortIdProxy">
+                                @foreach (var port in ports)
+                                {
+                                    <option value="@port.Id">@port.DisplayName</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="col-md-6"><label class="form-label">Consignee Name</label><InputText @bind-Value="form.ConsigneeName" class="form-control" /></div>
+                        <div class="col-md-6"><label class="form-label">Consignee Company</label><InputText @bind-Value="form.ConsigneeCompany" class="form-control" /></div>
+                    </div>
+
+                    <div class="ibl-divider my-4"></div>
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h5 class="mb-1">Container disponibili nel porto selezionato</h5>
+                            <p class="text-muted small mb-0">Filtro automatico su porto di partenza e data di partenza.</p>
+                        </div>
+                        <button class="btn btn-outline-secondary" type="button" @onclick="LoadAvailableContainersAsync">Aggiorna disponibilità</button>
+                    </div>
+
+                    <div class="row g-3 align-items-end mt-1">
+                        <div class="col-md-9">
+                            <label class="form-label">Seleziona container disponibili</label>
+                            <select class="form-select" @bind="containerIdToAdd">
+                                <option value="0">-- scegli un container --</option>
+                                @foreach (var container in availableContainers)
+                                {
+                                    <option value="@container.Id">@container.ContainerNumber · @container.ProductCategoryName · @(container.CurrentPortCode ?? "N/D")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-outline-primary w-100" type="button" @onclick="AddContainerToSelection">Aggiungi al booking</button>
+                        </div>
+                    </div>
+
+                    @if (selectedContainers.Any())
+                    {
+                        <div class="mt-3 ibl-selection-grid">
+                            @foreach (var container in selectedContainers)
+                            {
+                                <div class="ibl-selection-item">
+                                    <div>
+                                        <strong>@container.ContainerNumber</strong>
+                                        <div class="small text-muted">@container.ProductCategoryName · @container.CurrentPortName</div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveContainer(container.Id)">Rimuovi</button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary mt-3 mb-0">Nessun container selezionato. Puoi aggiungerne più di uno dallo stesso porto.</div>
+                    }
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button class="btn btn-success" type="submit">Crea booking</button>
+                    </div>
+                </EditForm>
+
+                @if (!string.IsNullOrWhiteSpace(message))
+                {
+                    <div class="alert @(success ? "alert-success" : "alert-danger") mt-3">@message</div>
+                }
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="ibl-card h-100">
+                <h4>Riepilogo booking</h4>
+                <div class="ibl-mini-card mt-3">
+                    <div><strong>Partenza:</strong> @GetPortLabel(form.OriginPortId)</div>
+                    <div><strong>Arrivo:</strong> @GetPortLabel(form.DestinationPortId)</div>
+                    <div><strong>Data partenza:</strong> @form.ShippingDate.ToString("dd/MM/yyyy")</div>
+                    <div><strong>Data arrivo:</strong> @form.EstimatedArrivalDate.ToString("dd/MM/yyyy")</div>
+                    <div><strong>Container selezionati:</strong> @selectedContainers.Count</div>
+                </div>
+                <div class="ibl-mini-card mt-3">
+                    <div class="small text-uppercase text-muted">Cliente collegato</div>
+                    @if (SelectedCustomer is not null)
+                    {
+                        <strong>@SelectedCustomer.FullName</strong>
+                        <div>@SelectedCustomer.CompanyName</div>
+                        <div class="small text-muted">@SelectedCustomer.Email</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CreateBookingRequest form = new();
+    private string? message;
+    private bool success;
+    private List<PortDto> ports = new();
+    private List<ContainerInfoDto> availableContainers = new();
+    private List<ContainerInfoDto> selectedContainers = new();
+    private int selectedCustomerId = 3;
+    private int containerIdToAdd;
+    private bool _initialized;
+
+    private bool IsAuthorized => Auth.CurrentUser?.Role is UserRole.Employee or UserRole.Admin;
+    private IEnumerable<AppUser> Customers => Auth.Users.Where(u => u.Role == UserRole.Customer);
+    private AppUser? SelectedCustomer => Customers.FirstOrDefault(c => c.Id == selectedCustomerId);
+
+    private int SelectedCustomerIdProxy
+    {
+        get => selectedCustomerId;
+        set
+        {
+            selectedCustomerId = value;
+            ApplySelectedCustomer();
+        }
+    }
+
+    private int OriginPortIdProxy
+    {
+        get => form.OriginPortId ?? 0;
+        set
+        {
+            form.OriginPortId = value;
+            ApplySelectedPortsToAddresses();
+            _ = InvokeAsync(LoadAvailableContainersAsync);
+        }
+    }
+
+    private int DestinationPortIdProxy
+    {
+        get => form.DestinationPortId ?? 0;
+        set
+        {
+            form.DestinationPortId = value;
+            ApplySelectedPortsToAddresses();
+        }
+    }
+
+    private DateTime ShippingDateProxy
+    {
+        get => form.ShippingDate;
+        set
+        {
+            form.ShippingDate = value;
+            _ = InvokeAsync(LoadAvailableContainersAsync);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_initialized || !Auth.IsInitialized || !IsAuthorized)
+        {
+            return;
+        }
+
+        _initialized = true;
+        ports = await Api.GetPortsAsync();
+        if (ports.Any())
+        {
+            form.OriginPortId ??= ports.First().Id;
+            form.DestinationPortId ??= ports.Skip(1).FirstOrDefault()?.Id ?? ports.First().Id;
+            ApplySelectedPortsToAddresses();
+        }
+        ApplySelectedCustomer();
+        await LoadAvailableContainersAsync();
+        StateHasChanged();
+    }
+
+    private void ApplySelectedCustomer()
+    {
+        if (SelectedCustomer is null)
+        {
+            return;
+        }
+
+        var nameParts = SelectedCustomer.FullName.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        form.CustomerName = nameParts.FirstOrDefault() ?? SelectedCustomer.FullName;
+        form.CustomerSurname = nameParts.Skip(1).FirstOrDefault() ?? "Cliente";
+        form.CustomerCompany = SelectedCustomer.CompanyName;
+        form.CustomerTaxCode = SelectedCustomer.TaxCodeOrVatNumber;
+    }
+
+    private void ApplySelectedPortsToAddresses()
+    {
+        var originPort = ports.FirstOrDefault(p => p.Id == form.OriginPortId);
+        if (originPort is not null)
+        {
+            form.OriginNation = originPort.Nation;
+            form.OriginCity = originPort.City;
+            form.OriginAddress = originPort.Name;
+            form.OriginPostalCode = originPort.Code;
+        }
+
+        var destinationPort = ports.FirstOrDefault(p => p.Id == form.DestinationPortId);
+        if (destinationPort is not null)
+        {
+            form.DestinationNation = destinationPort.Nation;
+            form.DestinationCity = destinationPort.City;
+            form.DestinationAddress = destinationPort.Name;
+            form.DestinationPostalCode = destinationPort.Code;
+        }
+    }
+
+    private async Task LoadAvailableContainersAsync()
+    {
+        selectedContainers = selectedContainers.Where(s => s.CurrentPortId == form.OriginPortId).ToList();
+        if (form.OriginPortId is null || form.OriginPortId.Value == 0)
+        {
+            availableContainers.Clear();
+            return;
+        }
+
+        availableContainers = await Api.GetAvailableContainersAsync(form.OriginPortId.Value, form.ShippingDate);
+        StateHasChanged();
+    }
+
+    private void AddContainerToSelection()
+    {
+        if (containerIdToAdd == 0)
+        {
+            return;
+        }
+
+        var container = availableContainers.FirstOrDefault(c => c.Id == containerIdToAdd);
+        if (container is null || selectedContainers.Any(c => c.Id == container.Id))
+        {
+            return;
+        }
+
+        selectedContainers.Add(container);
+        containerIdToAdd = 0;
+    }
+
+    private void RemoveContainer(int containerId)
+    {
+        selectedContainers.RemoveAll(c => c.Id == containerId);
+    }
+
+    private async Task CreateBookingAsync()
+    {
+        try
+        {
+            if (!selectedContainers.Any())
+            {
+                throw new InvalidOperationException("Seleziona almeno un container disponibile prima di creare il booking.");
+            }
+
+            ApplySelectedCustomer();
+            ApplySelectedPortsToAddresses();
+
+            var bookingId = await Api.CreateBookingAsync(form);
+            foreach (var container in selectedContainers)
+            {
+                await Api.AssociateContainerAsync(container.Id, bookingId, form.AgencyCode);
+            }
+
+            if (SelectedCustomer is not null)
+            {
+                await Registry.LinkBookingToCustomerAsync(selectedCustomerId, bookingId, selectedContainers.Select(c => c.Id));
+            }
+
+            success = true;
+            message = $"Booking {bookingId} creato con {selectedContainers.Count} container associati.";
+            form.BkNumber = $"BK-{DateTime.Now:yyyyMMdd-HHmmss}";
+            selectedContainers.Clear();
+            await LoadAvailableContainersAsync();
+        }
+        catch (Exception ex)
+        {
+            success = false;
+            message = ex.Message;
+        }
+    }
+
+    private string GetPortLabel(int? portId) => ports.FirstOrDefault(p => p.Id == portId)?.DisplayName ?? "Non selezionato";
+}

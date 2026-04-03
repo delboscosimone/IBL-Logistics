@@ -1,0 +1,49 @@
+@page "/employee"
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+<h1>Area Dipendente</h1>
+<p class="lead">Centro operativo per registrare clienti, verificare disponibilità dei container e creare booking multi-container.</p>
+
+@if (!Auth.IsInitialized)
+{
+    <div class="ibl-card">Verifica sessione in corso...</div>
+}
+else if (!IsAuthorized)
+{
+    <div class="alert alert-warning">Accesso consentito solo ai dipendenti o agli amministratori.</div>
+}
+else
+{
+    <div class="row g-4 mt-1">
+        <div class="col-lg-4">
+            <div class="ibl-stat"><span class="ibl-stat-title">Funzione</span><strong>Booking guidato per porto</strong><div class="small mt-2 opacity-75">Partenza, arrivo, date e selezione automatica dei container disponibili.</div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="ibl-stat"><span class="ibl-stat-title">Funzione</span><strong>Più container per singolo booking</strong><div class="small mt-2 opacity-75">Puoi aggiungere più unità dalla stessa lista disponibilità.</div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="ibl-stat"><span class="ibl-stat-title">Funzione</span><strong>Cliente collegato</strong><div class="small mt-2 opacity-75">Il booking viene collegato al cliente selezionato per la dashboard cliente.</div></div>
+        </div>
+    </div>
+
+    <div class="ibl-card mt-4">
+        <h4>Workflow consigliato</h4>
+        <ol class="mb-4">
+            <li>Verifica o registra il cliente nell'area login/registrazione.</li>
+            <li>Apri la pagina <strong>Nuovo booking</strong>.</li>
+            <li>Seleziona porto di partenza, porto di arrivo e date.</li>
+            <li>Scegli uno o più container disponibili nel porto selezionato.</li>
+            <li>Crea il booking e controlla il riepilogo nella pagina Booking.</li>
+        </ol>
+        <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/create-booking")'>Apri Nuovo booking</button>
+            <button class="btn btn-outline-primary" @onclick='() => Nav.NavigateTo("/bookings")'>Vai ai booking</button>
+            <button class="btn btn-outline-secondary" @onclick='() => Nav.NavigateTo("/containers")'>Consulta i container</button>
+        </div>
+    </div>
+}
+
+@code {
+    private bool IsAuthorized => Auth.CurrentUser?.Role is UserRole.Employee or UserRole.Admin;
+}

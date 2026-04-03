@@ -1,0 +1,77 @@
+@page "/categories"
+@inject ApiClient Api
+
+<h1>Categorie MSC</h1>
+<p class="lead">Tabella aggiornata con set point consigliati e icona identificativa per ciascuna categoria.</p>
+
+<div class="ibl-card">
+    <button class="btn btn-primary mb-3" @onclick="LoadCategories">Carica categorie</button>
+
+    @if (isLoading)
+    {
+        <p>Caricamento...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="alert alert-danger">@error</div>
+    }
+    else if (categories.Count == 0)
+    {
+        <p>Nessuna categoria caricata.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Icona</th>
+                        <th>Codice</th>
+                        <th>Categoria</th>
+                        <th>Set point T</th>
+                        <th>Set point H</th>
+                        <th>URL icona</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in categories)
+                {
+                    <tr>
+                        <td><img src="@item.ResolvedIconUrl" alt="@item.DisplayName" class="ibl-category-icon" /></td>
+                        <td>@item.Code</td>
+                        <td>@item.DisplayName</td>
+                        <td>@item.DefaultTemperatureSetpoint</td>
+                        <td>@item.DefaultHumiditySetpoint</td>
+                        <td><code>@item.ResolvedIconUrl</code></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading;
+    private string? error;
+    private List<CategoryInfoDto> categories = new();
+
+    private async Task LoadCategories()
+    {
+        isLoading = true;
+        error = null;
+        categories.Clear();
+        try
+        {
+            categories = await Api.GetCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

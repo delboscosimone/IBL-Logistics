@@ -1,0 +1,88 @@
+@page "/"
+@inject AuthStateService Auth
+
+<section class="ibl-hero ibl-card p-4 p-lg-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <span class="ibl-chip mb-3">Maritime logistics platform</span>
+            <h1 class="display-5 fw-bold mb-3">IBL – International BlueHarbor Logistics</h1>
+            <p class="lead mb-4">
+                Piattaforma digitale per la gestione di booking marittimi, disponibilità container per porto e periodo,
+                monitoraggio iReefer e coordinamento operativo tra hub internazionali.
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary btn-lg" href="/containers">Esplora i container</a>
+                <a class="btn btn-light btn-lg" href="/categories">Scopri i servizi IBL</a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="ibl-grid-two">
+                <div class="ibl-mini-card text-white border-0" style="background:rgba(255,255,255,.14)">
+                    <div class="small text-uppercase opacity-75">Servizio</div>
+                    <h5 class="mb-1">Container standard 20' / 40'</h5>
+                    <div class="small">Inventario, booking e assegnazione automatica per porto di partenza.</div>
+                </div>
+                <div class="ibl-mini-card text-white border-0" style="background:rgba(255,255,255,.14)">
+                    <div class="small text-uppercase opacity-75">Servizio</div>
+                    <h5 class="mb-1">iReefer</h5>
+                    <div class="small">Set point di temperatura e umidità per carichi sensibili.</div>
+                </div>
+                <div class="ibl-mini-card text-white border-0" style="background:rgba(255,255,255,.14)">
+                    <div class="small text-uppercase opacity-75">Servizio</div>
+                    <h5 class="mb-1">Port network</h5>
+                    <div class="small">10 porti internazionali già disponibili per booking e disponibilità.</div>
+                </div>
+                <div class="ibl-mini-card text-white border-0" style="background:rgba(255,255,255,.14)">
+                    <div class="small text-uppercase opacity-75">Servizio</div>
+                    <h5 class="mb-1">Real-time monitoring</h5>
+                    <div class="small">Telemetria e segnalazione anomalie su container reefer.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="row g-4 mt-2">
+    <div class="col-lg-3">
+        <div class="ibl-card h-100"><h4>Booking guidato</h4><p>Il dipendente seleziona porto di partenza, porto di arrivo, date e i container realmente disponibili nel porto scelto.</p></div>
+    </div>
+    <div class="col-lg-3">
+        <div class="ibl-card h-100"><h4>Disponibilità automatica</h4><p>I container prenotabili vengono filtrati in base al porto selezionato e alla data di partenza prevista.</p></div>
+    </div>
+    <div class="col-lg-3">
+        <div class="ibl-card h-100"><h4>Più container per booking</h4><p>Ogni prenotazione può includere più unità, con riepilogo immediato delle categorie selezionate.</p></div>
+    </div>
+    <div class="col-lg-3">
+        <div class="ibl-card h-100"><h4>Esperienza utente migliorata</h4><p>Dashboard dedicate per cliente, dipendente e amministratore con navigazione più chiara.</p></div>
+    </div>
+</section>
+
+<section class="row g-4 mt-2">
+    <div class="col-lg-8">
+        <div class="ibl-card h-100">
+            <h3 class="mb-3">Servizi IBL</h3>
+            <div class="row g-3">
+                <div class="col-md-6"><div class="ibl-service-item"><strong>Container dry e reefer</strong><span>Gestione inventario centralizzata con stato operativo e set point dedicati.</span></div></div>
+                <div class="col-md-6"><div class="ibl-service-item"><strong>Port selection</strong><span>Selezione da elenco di 10 porti internazionali con codici porto già configurati.</span></div></div>
+                <div class="col-md-6"><div class="ibl-service-item"><strong>Tracking logistico</strong><span>Origine, destinazione, data partenza e data arrivo sempre visibili nei booking.</span></div></div>
+                <div class="col-md-6"><div class="ibl-service-item"><strong>Customer area</strong><span>Visualizzazione dei booking cliente con container associati e date di viaggio.</span></div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="ibl-card h-100">
+            <h4 class="mb-3">Accesso rapido</h4>
+            @if (Auth.CurrentUser is null)
+            {
+                <p class="mb-3">Accedi per aprire l'area cliente, dipendente o amministratore.</p>
+                <a class="btn btn-primary w-100" href="/login">Login / Registrazione</a>
+            }
+            else
+            {
+                <div class="fw-semibold">@Auth.CurrentUser.FullName</div>
+                <div class="text-muted small">@Auth.CurrentUser.RoleLabel · @Auth.CurrentUser.CompanyName</div>
+                <a class="btn btn-primary w-100 mt-3" href="/dashboard">Apri dashboard</a>
+            }
+        </div>
+    </div>
+</section>

@@ -1,0 +1,95 @@
+@page "/telemetry"
+@inject ApiClient Api
+
+<h1>Telemetria reefer</h1>
+<p class="lead">Modulo da usare per i container refrigerati. La sezione è stata resa più coerente con il monitoraggio operativo iReefer.</p>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="ibl-card">
+            <h4>Controllo container</h4>
+            <label class="form-label">Container ID</label>
+            <InputNumber @bind-Value="containerId" class="form-control" />
+            <label class="form-label mt-3">Agent code tecnico</label>
+            <InputText @bind-Value="agentCode" class="form-control" />
+            <div class="small text-muted mt-2">Campo ancora richiesto dagli endpoint legacy del backend.</div>
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+                <button class="btn btn-primary" @onclick="LoadAverageTemperature">Media temperatura</button>
+                <button class="btn btn-outline-danger" @onclick="LoadOutOfRange">Fuori range</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="ibl-card">
+            <h4>Risultati</h4>
+            @if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="alert alert-danger">@error</div>
+            }
+            @if (averageTemperature is not null)
+            {
+                <div class="ibl-mini-card mb-3">
+                    <strong>Media temperatura</strong>
+                    <div>@averageTemperature °C</div>
+                </div>
+            }
+            @if (outOfRange.Count > 0)
+            {
+                <div class="ibl-mini-card">
+                    <strong>Rilevazioni fuori range</strong>
+                    <ul class="mt-2 mb-0">
+                        @foreach (var item in outOfRange)
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
+                </div>
+            }
+            @if (averageTemperature is null && outOfRange.Count == 0 && string.IsNullOrWhiteSpace(error))
+            {
+                <p>Nessun risultato disponibile.</p>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private int containerId = 1;
+    private string agentCode = "AG001";
+    private float? averageTemperature;
+    private List<string> outOfRange = new();
+    private string? error;
+
+    private async Task LoadAverageTemperature()
+    {
+        Reset();
+        try
+        {
+            averageTemperature = await Api.GetAverageTemperatureAsync(containerId, agentCode);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private async Task LoadOutOfRange()
+    {
+        Reset();
+        try
+        {
+            outOfRange = await Api.GetTelemetriesOutOfRangeAsync(containerId);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+
+    private void Reset()
+    {
+        error = null;
+        averageTemperature = null;
+        outOfRange = new();
+    }
+}

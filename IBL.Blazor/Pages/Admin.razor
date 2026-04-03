@@ -1,0 +1,173 @@
+@page "/admin"
+@inject AuthStateService Auth
+@inject ApiClient Api
+
+<h1>Dashboard Admin</h1>
+<p class="lead">L'amministratore può creare nuovi dipendenti, nuovi clienti, nuovi container e accedere a tutte le funzioni operative.</p>
+
+@if (!Auth.IsInitialized)
+{
+    <div class="ibl-card">Verifica sessione in corso...</div>
+}
+else if (!IsAuthorized)
+{
+    <div class="alert alert-warning">Accesso consentito solo all'amministratore.</div>
+}
+else
+{
+    <div class="row g-4 mt-1">
+        <div class="col-lg-5">
+            <div class="ibl-card h-100">
+                <h4>Crea nuovo utente</h4>
+                <EditForm Model="newUser" OnValidSubmit="CreateUserAsync">
+                    <div class="mb-3">
+                        <label class="form-label">Nome completo</label>
+                        <InputText class="form-control" @bind-Value="newUser.FullName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Azienda</label>
+                        <InputText class="form-control" @bind-Value="newUser.CompanyName" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Partita IVA / Codice fiscale</label>
+                        <InputText class="form-control" @bind-Value="newUser.TaxCodeOrVatNumber" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" @bind-Value="newUser.Email" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <InputText class="form-control" type="password" @bind-Value="newUser.Password" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ruolo</label>
+                        <InputSelect class="form-select" @bind-Value="newUser.Role">
+                            <option value="@UserRole.Employee">Dipendente</option>
+                            <option value="@UserRole.Customer">Cliente</option>
+                            <option value="@UserRole.Admin">Admin</option>
+                        </InputSelect>
+                    </div>
+                    <button class="btn btn-primary" type="submit">Crea account</button>
+                </EditForm>
+                @if (!string.IsNullOrWhiteSpace(userMessage))
+                {
+                    <div class="alert @(userOk ? "alert-success" : "alert-danger") mt-3">@userMessage</div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="ibl-card h-100">
+                <h4>Crea nuovo container</h4>
+                <EditForm Model="containerRequest" OnValidSubmit="CreateContainerAsync">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Numero container</label>
+                            <InputText class="form-control" @bind-Value="containerRequest.ContainerNumber" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Agency Code</label>
+                            <InputText class="form-control" @bind-Value="containerRequest.AgencyCode" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Agent Code</label>
+                            <InputText class="form-control" @bind-Value="containerRequest.AgentCode" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria</label>
+                            <InputNumber class="form-control" @bind-Value="containerRequest.CategoryCode" />
+                        </div>
+                    </div>
+                    <button class="btn btn-outline-primary mt-3" type="submit">Inserisci container</button>
+                </EditForm>
+                @if (!string.IsNullOrWhiteSpace(containerMessage))
+                {
+                    <div class="alert @(containerOk ? "alert-success" : "alert-danger") mt-3">@containerMessage</div>
+                }
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="ibl-card">
+                <h4>Utenti registrati</h4>
+                <table class="table table-hover align-middle mt-3">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nome</th>
+                            <th>Email</th>
+                            <th>Ruolo</th>
+                            <th>Azienda</th>
+                            <th>P.IVA / CF</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Auth.Users)
+                        {
+                            <tr>
+                                <td>@user.Id</td>
+                                <td>@user.FullName</td>
+                                <td>@user.Email</td>
+                                <td>@user.RoleLabel</td>
+                                <td>@user.CompanyName</td>
+                                <td>@user.TaxCodeOrVatNumber</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private UserVm newUser = new();
+    private CreateContainerRequest containerRequest = new();
+    private string? userMessage;
+    private bool userOk;
+    private string? containerMessage;
+    private bool containerOk;
+
+    private bool IsAuthorized => Auth.CurrentUser?.Role == UserRole.Admin;
+
+    private async Task CreateUserAsync()
+    {
+        try
+        {
+            var user = await Auth.CreateUserAsync(newUser.FullName, newUser.Email, newUser.Password, newUser.Role, newUser.CompanyName, newUser.TaxCodeOrVatNumber);
+            userOk = true;
+            userMessage = $"Creato utente {user.FullName} con ruolo {user.RoleLabel}.";
+            newUser = new();
+        }
+        catch (Exception ex)
+        {
+            userOk = false;
+            userMessage = ex.Message;
+        }
+    }
+
+    private async Task CreateContainerAsync()
+    {
+        try
+        {
+            var id = await Api.CreateContainerAsync(containerRequest);
+            containerOk = true;
+            containerMessage = $"Container creato con ID {id}.";
+            containerRequest = new();
+        }
+        catch (Exception ex)
+        {
+            containerOk = false;
+            containerMessage = ex.Message;
+        }
+    }
+
+    private class UserVm
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string CompanyName { get; set; } = string.Empty;
+        public string TaxCodeOrVatNumber { get; set; } = string.Empty;
+        public UserRole Role { get; set; } = UserRole.Employee;
+    }
+}
