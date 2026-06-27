@@ -1,0 +1,68 @@
+@page "/containers"
+@inject ApiClient Api
+
+<div class="mb-4">
+    <h1 class="ibl-page-title">Container</h1>
+    <p class="ibl-muted fs-5">Ricerca container per ID e verifica porto corrente, categoria e disponibilità.</p>
+</div>
+
+<div class="ibl-grid-2">
+    <div class="ibl-card">
+        <label class="form-label">Ricerca per ID</label>
+        <div class="d-flex gap-2">
+            <input class="form-control" type="number" @bind="containerId" />
+            <button class="btn btn-primary" @onclick="SearchAsync">Cerca</button>
+        </div>
+    </div>
+    <div class="ibl-card">
+        <h3>Risultato</h3>
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger mt-3">@error</div>
+        }
+        else if (container is null)
+        {
+            <p class="ibl-muted mb-0">Nessun container caricato.</p>
+        }
+        else
+        {
+            <div class="ibl-card-soft mt-3">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <div class="ibl-stat-title">Container</div>
+                        <h2 class="fw-bold">@container.ContainerNumber</h2>
+                    </div>
+                    <span class="ibl-pill @(container.IsAvailable ? "customer" : "admin")">@(container.IsAvailable ? "Disponibile" : "Assegnato")</span>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6"><strong>Categoria:</strong><br /><span class="ibl-muted">@container.ProductCategoryName</span></div>
+                    <div class="col-md-6"><strong>Porto corrente:</strong><br /><span class="ibl-muted">@container.CurrentPortName</span></div>
+                    <div class="col-md-6"><strong>Peso / Volume:</strong><br /><span class="ibl-muted">@container.TotalWeight kg · @container.TotalVolume m³</span></div>
+                    <div class="col-md-6"><strong>Setpoint:</strong><br /><span class="ibl-muted">@container.TemperatureSetpoint °C · @container.HumiditySetpoint %</span></div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private int containerId = 1;
+    private ContainerInfoDto? container;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() => await SearchAsync();
+
+    private async Task SearchAsync()
+    {
+        error = null;
+        container = null;
+        try
+        {
+            container = await Api.GetContainerByIdAsync(containerId);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

@@ -1,0 +1,47 @@
+@inject AuthStateService Auth
+
+@if (Auth.CurrentUser is null)
+{
+    <div class="ibl-nav-section">
+        <div class="ibl-nav-title">Navigazione</div>
+        <NavLink class="ibl-nav-link" href="" Match="NavLinkMatch.All">⌂ <span>Home</span></NavLink>
+    </div>
+}
+else
+{
+    <div class="ibl-nav-section">
+        <div class="ibl-nav-title">Piattaforma</div>
+        <NavLink class="ibl-nav-link" href="" Match="NavLinkMatch.All">⌂ <span>Home</span></NavLink>
+        <NavLink class="ibl-nav-link" href="containers">▣ <span>Container</span></NavLink>
+        <NavLink class="ibl-nav-link" href="bookings">▣ <span>Booking</span></NavLink>
+        <NavLink class="ibl-nav-link" href="categories">◇ <span>Categorie MSC</span></NavLink>
+        <NavLink class="ibl-nav-link" href="telemetry">♨ <span>Telemetria Reefer</span></NavLink>
+        <NavLink class="ibl-nav-link" href="pricing">€ <span>Calcolo Prezzi</span></NavLink>
+    </div>
+
+    @if (Auth.CurrentUser.Role is UserRole.Employee or UserRole.Admin)
+    {
+        <div class="ibl-nav-section">
+            <div class="ibl-nav-title">Operativo</div>
+            <NavLink class="ibl-nav-link" href="employee">♟ <span>Area Dipendente</span></NavLink>
+            <NavLink class="ibl-nav-link" href="create-booking">＋ <span>Nuovo Booking</span></NavLink>
+        </div>
+    }
+
+    @if (Auth.CurrentUser.Role is UserRole.Admin)
+    {
+        <div class="ibl-nav-section">
+            <div class="ibl-nav-title">Amministrazione</div>
+            <NavLink class="ibl-nav-link" href="admin">🛡 <span>Pannello Admin</span></NavLink>
+            <NavLink class="ibl-nav-link" href="create-container">▣ <span>Crea Container</span></NavLink>
+        </div>
+    }
+
+    @if (Auth.CurrentUser.Role is UserRole.Customer)
+    {
+        <div class="ibl-nav-section">
+            <div class="ibl-nav-title">Cliente</div>
+            <NavLink class="ibl-nav-link" href="customer">◉ <span>Area Cliente</span></NavLink>
+        </div>
+    }
+}

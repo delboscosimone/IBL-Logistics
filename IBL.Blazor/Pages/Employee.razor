@@ -1,0 +1,43 @@
+@page "/employee"
+@inject AuthStateService Auth
+
+@if (Auth.CurrentUser?.Role is not (UserRole.Employee or UserRole.Admin))
+{
+    <div class="alert alert-danger">Devi effettuare il login come dipendente o admin per accedere all'area operativa.</div>
+}
+else
+{
+    <div class="mb-4">
+        <h1 class="ibl-page-title">♟ Area Dipendente</h1>
+        <p class="ibl-muted fs-5">Centro operativo per registrare clienti, verificare disponibilità container e creare booking multi-container.</p>
+    </div>
+
+    <div class="ibl-grid-4 mb-4">
+        <div class="ibl-card ibl-stat-card"><div class="ibl-stat-icon">▣</div><div><div class="ibl-stat-title">Booking attivi</div><div class="ibl-stat-number">47</div><div class="ibl-success">↑ +8 questa settimana</div></div></div>
+        <div class="ibl-card ibl-stat-card"><div class="ibl-stat-icon" style="color:var(--ibl-green)">■</div><div><div class="ibl-stat-title">Container liberi</div><div class="ibl-stat-number">183</div><div class="ibl-success">su 240 totali</div></div></div>
+        <div class="ibl-card ibl-stat-card"><div class="ibl-stat-icon" style="color:var(--ibl-orange)">♨</div><div><div class="ibl-stat-title">Reefer online</div><div class="ibl-stat-number">31</div><div class="ibl-danger">⚠ 2 in alert</div></div></div>
+        <div class="ibl-card ibl-stat-card"><div class="ibl-stat-icon">⚓</div><div><div class="ibl-stat-title">Porti attivi</div><div class="ibl-stat-number">10</div><div class="ibl-success">5 continenti</div></div></div>
+    </div>
+
+    <div class="ibl-grid-2">
+        <div class="ibl-card">
+            <h2 class="ibl-section-title">⚡ Azioni rapide</h2>
+            <hr class="border-secondary" />
+            <div class="ibl-action-list">
+                <a class="ibl-action primary" href="/create-booking"><span class="ibl-action-icon">＋</span><span><strong>Nuovo Booking</strong><br /><small>Porto, date, container disponibili</small></span></a>
+                <a class="ibl-action" href="/bookings"><span class="ibl-action-icon">☷</span><span><strong>Visualizza Booking</strong><br /><small class="ibl-muted">Storico e stato delle prenotazioni</small></span></a>
+                <a class="ibl-action" href="/containers"><span class="ibl-action-icon">▣</span><span><strong>Consulta Container</strong><br /><small class="ibl-muted">Disponibilità per porto e categoria</small></span></a>
+                <a class="ibl-action" href="/telemetry"><span class="ibl-action-icon">♨</span><span><strong>Telemetria Reefer</strong><br /><small class="ibl-muted">Temperature e alert container refrigerati</small></span></a>
+            </div>
+        </div>
+
+        <div class="ibl-card">
+            <h2 class="ibl-section-title">⌘ Workflow operativo</h2>
+            <hr class="border-secondary" />
+            <div class="ibl-step"><div class="ibl-step-number">1</div><div><h5>Verifica o registra il cliente</h5><p class="ibl-muted mb-0">Usa la pagina Login/Registrazione per creare il profilo aziendale del cliente con P.IVA.</p></div></div>
+            <div class="ibl-step"><div class="ibl-step-number">2</div><div><h5>Seleziona porto e date</h5><p class="ibl-muted mb-0">Nella pagina Nuovo Booking scegli il porto di partenza, arrivo e le date di spedizione.</p></div></div>
+            <div class="ibl-step"><div class="ibl-step-number">3</div><div><h5>Aggiungi i container</h5><p class="ibl-muted mb-0">Il sistema mostra solo i container disponibili nel porto scelto per quelle date.</p></div></div>
+            <div class="ibl-step"><div class="ibl-step-number">4</div><div><h5>Conferma e crea il booking</h5><p class="ibl-muted mb-0">Verifica il riepilogo e conferma: il booking viene collegato automaticamente al cliente.</p></div></div>
+        </div>
+    </div>
+}

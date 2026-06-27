@@ -1,0 +1,75 @@
+@page "/telemetry"
+@inject ApiClient Api
+
+<div class="mb-4">
+    <h1 class="ibl-page-title">Telemetria Reefer</h1>
+    <p class="ibl-muted fs-5">Controllo temperatura media e anomalie fuori soglia sui container refrigerati.</p>
+</div>
+
+<div class="ibl-grid-2">
+    <div class="ibl-card">
+        <h3 class="mb-3">Ricerca telemetrie</h3>
+        <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Container ID</label><input class="form-control" type="number" @bind="containerId" /></div>
+            <div class="col-md-6"><label class="form-label">Agent Code</label><input class="form-control" @bind="agentCode" /></div>
+        </div>
+        <button class="btn btn-primary mt-4" @onclick="LoadAsync">Analizza</button>
+    </div>
+    <div class="ibl-card">
+        <h3>Risultato</h3>
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger mt-3">@error</div>
+        }
+        else if (!loaded)
+        {
+            <p class="ibl-muted">Nessun dato caricato.</p>
+        }
+        else
+        {
+            <div class="ibl-card-soft mt-3">
+                <div class="ibl-stat-title">Temperatura media</div>
+                <div class="ibl-stat-number">@(avgTemperature?.ToString("0.0") ?? "N/D") °C</div>
+            </div>
+            <h5 class="mt-4">Anomalie</h5>
+            @if (outOfRange.Count == 0)
+            {
+                <p class="ibl-success">Nessuna anomalia rilevata.</p>
+            }
+            else
+            {
+                <ul>
+                    @foreach (var item in outOfRange)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private int containerId = 1;
+    private string agentCode = "AG001";
+    private float? avgTemperature;
+    private List<string> outOfRange = new();
+    private string? error;
+    private bool loaded;
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            error = null;
+            avgTemperature = await Api.GetAverageTemperatureAsync(containerId, agentCode);
+            outOfRange = await Api.GetTelemetriesOutOfRangeAsync(containerId);
+            loaded = true;
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+            loaded = false;
+        }
+    }
+}

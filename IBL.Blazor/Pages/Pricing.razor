@@ -1,0 +1,30 @@
+@page "/pricing"
+
+<div class="mb-4">
+    <h1 class="ibl-page-title">Calcolo Prezzi</h1>
+    <p class="ibl-muted fs-5">Modulo dimostrativo per stimare il costo di una spedizione in base a container e distanza simulata.</p>
+</div>
+
+<div class="ibl-grid-2">
+    <div class="ibl-card">
+        <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Numero container</label><input class="form-control" type="number" @bind="containerCount" /></div>
+            <div class="col-md-6"><label class="form-label">Giorni viaggio</label><input class="form-control" type="number" @bind="days" /></div>
+            <div class="col-md-6"><label class="form-label">Costo base / container</label><input class="form-control" type="number" @bind="basePrice" /></div>
+            <div class="col-md-6"><label class="form-label">Supplemento reefer</label><input class="form-control" type="number" @bind="reeferExtra" /></div>
+        </div>
+    </div>
+    <div class="ibl-card">
+        <div class="ibl-stat-title">Totale stimato</div>
+        <div class="ibl-stat-number">@Total.ToString("C0")</div>
+        <p class="ibl-muted">La formula è dimostrativa e serve per mostrare una possibile estensione commerciale del sistema.</p>
+    </div>
+</div>
+
+@code {
+    private int containerCount = 2;
+    private int days = 8;
+    private decimal basePrice = 1200;
+    private decimal reeferExtra = 350;
+    private decimal Total => containerCount * (basePrice + reeferExtra) + (days * 80);
+}

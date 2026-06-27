@@ -1,0 +1,108 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject AuthStateService Auth
+@inject BookingRegistryService Registry
+@inject NavigationManager Nav
+
+<PageTitle>IBL - International BlueHarbor Logistics</PageTitle>
+
+<div class="ibl-app">
+    <aside class="ibl-sidebar">
+        <div class="ibl-sidebar-brand">
+            <img src="/img/ibl-logo.svg" class="ibl-logo" alt="IBL logo" />
+            <div>
+                <div class="ibl-brand-title">IBL</div>
+                <div class="ibl-brand-subtitle">BlueHarbor Logistics</div>
+            </div>
+        </div>
+
+        <div class="ibl-sidebar-content">
+            <NavMenu />
+        </div>
+
+        <div class="ibl-user-box">
+            @if (!Auth.IsInitialized)
+            {
+                <div class="ibl-muted">Caricamento sessione...</div>
+            }
+            else if (Auth.CurrentUser is null)
+            {
+                <a class="btn btn-primary w-100" href="/login">↪ Accedi</a>
+            }
+            else
+            {
+                <div class="ibl-user-row">
+                    <div class="ibl-avatar">@Auth.CurrentUser.FullName.FirstOrDefault()</div>
+                    <div>
+                        <div class="fw-bold">@Auth.CurrentUser.FullName</div>
+                        <div class="ibl-role">@Auth.CurrentUser.RoleLabel</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost w-100" @onclick="LogoutAsync">↩ Esci</button>
+            }
+        </div>
+    </aside>
+
+    <section class="ibl-main">
+        <header class="ibl-topbar">
+            <img src="/img/ibl-logo.svg" class="ibl-topbar-logo" alt="IBL logo" />
+            <div class="ibl-top-actions">
+                @if (Auth.CurrentUser is not null)
+                {
+                    <span class="ibl-status"><span class="ibl-dot"></span> Online</span>
+                    <a class="btn btn-primary" href="/dashboard">Dashboard</a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" href="/login">↪ Accedi</a>
+                }
+            </div>
+        </header>
+
+        <main class="ibl-content">
+            @if (!Auth.IsInitialized)
+            {
+                <div class="ibl-card">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    Inizializzazione sessione e dati locali...
+                </div>
+            }
+            else
+            {
+                @Body
+            }
+        </main>
+    </section>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Auth.OnChange += HandleAuthChange;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await Auth.InitializeAsync();
+        await Registry.InitializeAsync();
+        StateHasChanged();
+    }
+
+    private async Task LogoutAsync()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/");
+    }
+
+    private void HandleAuthChange() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Auth.OnChange -= HandleAuthChange;
+    }
+}

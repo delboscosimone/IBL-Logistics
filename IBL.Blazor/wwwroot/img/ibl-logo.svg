@@ -1,0 +1,6 @@
+<svg width="160" height="90" viewBox="0 0 160 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="160" height="90" rx="12" fill="none"/>
+  <text x="16" y="46" font-family="Arial Black, Arial, sans-serif" font-size="40" font-weight="900" fill="white">IBL</text>
+  <path d="M20 58 C45 48, 70 68, 100 55 C116 49, 132 51, 148 58" stroke="#27B6FF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M22 65 C52 56, 71 74, 104 62 C123 55, 137 57, 150 65" stroke="white" stroke-width="3" opacity="0.85" stroke-linecap="round"/>
+</svg>

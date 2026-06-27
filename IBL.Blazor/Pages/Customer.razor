@@ -1,0 +1,87 @@
+@page "/customer"
+@inject AuthStateService Auth
+@inject BookingRegistryService Registry
+@inject ApiClient Api
+
+@if (Auth.CurrentUser?.Role is not UserRole.Customer)
+{
+    <div class="alert alert-danger">Devi effettuare il login come cliente per accedere all'area cliente.</div>
+}
+else
+{
+    <div class="mb-4">
+        <h1 class="ibl-page-title">Area Cliente</h1>
+        <p class="ibl-muted fs-5">Profilo aziendale, prenotazioni e stato dei container collegati.</p>
+    </div>
+
+    <div class="ibl-grid-2">
+        <div class="ibl-card">
+            <h3>Dati cliente</h3>
+            <div class="row g-3 mt-2">
+                <div class="col-md-6"><strong>Nome:</strong><br /><span class="ibl-muted">@Auth.CurrentUser.FullName</span></div>
+                <div class="col-md-6"><strong>Email:</strong><br /><span class="ibl-muted">@Auth.CurrentUser.Email</span></div>
+                <div class="col-md-6"><strong>Azienda:</strong><br /><span class="ibl-muted">@Auth.CurrentUser.CompanyName</span></div>
+                <div class="col-md-6"><strong>P.IVA / CF:</strong><br /><span class="ibl-muted">@Auth.CurrentUser.TaxCodeOrVatNumber</span></div>
+            </div>
+        </div>
+        <div class="ibl-card">
+            <h3>Booking collegati</h3>
+            <p class="ibl-muted">I booking cliente sono collegati localmente in base alla registrazione del frontend.</p>
+        </div>
+    </div>
+
+    <div class="ibl-card mt-4">
+        <h3 class="mb-3">Le tue prenotazioni</h3>
+        @if (loading)
+        {
+            <p class="ibl-muted">Caricamento booking...</p>
+        }
+        else if (bookings.Count == 0)
+        {
+            <p class="ibl-muted mb-0">Nessun booking collegato a questo profilo.</p>
+        }
+        else
+        {
+            <div class="ibl-action-list">
+                @foreach (var booking in bookings)
+                {
+                    <div class="ibl-action">
+                        <span class="ibl-action-icon">▣</span>
+                        <span>
+                            <strong>@booking.BookingNumber</strong><br />
+                            <small class="ibl-muted">@booking.OriginPortDisplay → @booking.DestinationPortDisplay · @booking.ShippingDate.ToString("dd/MM/yyyy") - @booking.EstimatedArrivalDate.ToString("dd/MM/yyyy") · @booking.ContainerSummaries.Count container</small>
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool loading;
+    private List<BookingSummaryDto> bookings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Auth.CurrentUser is null)
+        {
+            return;
+        }
+        loading = true;
+        var links = Registry.GetByCustomer(Auth.CurrentUser.Id);
+        foreach (var link in links)
+        {
+            try
+            {
+                var booking = await Api.GetBookingByIdAsync(link.BookingId);
+                if (booking is not null)
+                {
+                    bookings.Add(booking);
+                }
+            }
+            catch { }
+        }
+        loading = false;
+    }
+}

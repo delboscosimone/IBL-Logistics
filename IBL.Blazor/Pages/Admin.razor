@@ -1,0 +1,122 @@
+@page "/admin"
+@inject AuthStateService Auth
+@inject ApiClient Api
+
+@if (Auth.CurrentUser?.Role is not UserRole.Admin)
+{
+    <div class="alert alert-danger">Devi effettuare il login come admin per accedere al pannello amministrazione.</div>
+}
+else
+{
+    <div class="mb-4">
+        <h1 class="ibl-page-title">🛡 Pannello Amministrazione</h1>
+        <p class="ibl-muted fs-5">Gestione utenti, container, configurazioni di sistema e analytics operative.</p>
+    </div>
+
+    <div class="ibl-grid-2">
+        <div class="ibl-card">
+            <h3 class="mb-4">👤+ Crea nuovo account utente</h3>
+            @if (!string.IsNullOrWhiteSpace(userMessage))
+            {
+                <div class="alert @(userSuccess ? "alert-success" : "alert-danger")">@userMessage</div>
+            }
+            <div class="row g-3">
+                <div class="col-12"><label class="form-label">Nome completo</label><input class="form-control" placeholder="Es. Giovanni Bianchi" @bind="userFullName" /></div>
+                <div class="col-md-6"><label class="form-label">Azienda</label><input class="form-control" placeholder="Bianchi Shipping" @bind="userCompany" /></div>
+                <div class="col-md-6"><label class="form-label">Partita IVA / CF</label><input class="form-control" placeholder="IT00000000000" @bind="userTaxCode" /></div>
+                <div class="col-md-6"><label class="form-label">Email</label><input class="form-control" placeholder="g.bianchi@shipping.it" @bind="userEmail" /></div>
+                <div class="col-md-6"><label class="form-label">Password</label><input class="form-control" type="password" placeholder="••••••••" @bind="userPassword" /></div>
+                <div class="col-12"><label class="form-label">Ruolo</label><select class="form-select" @bind="selectedRole"><option value="Employee">Dipendente</option><option value="Customer">Cliente</option><option value="Admin">Admin</option></select></div>
+            </div>
+            <button class="btn btn-primary mt-4" @onclick="CreateUserAsync">👤+ Crea account</button>
+        </div>
+
+        <div class="ibl-card">
+            <h3 class="mb-4">▣ Registra nuovo container</h3>
+            @if (!string.IsNullOrWhiteSpace(containerMessage))
+            {
+                <div class="alert @(containerSuccess ? "alert-success" : "alert-danger")">@containerMessage</div>
+            }
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Numero container</label><input class="form-control" @bind="containerNumber" /></div>
+                <div class="col-md-6"><label class="form-label">Agency code</label><input class="form-control" @bind="agencyCode" /></div>
+                <div class="col-md-6"><label class="form-label">Agent code</label><input class="form-control" @bind="agentCode" /></div>
+                <div class="col-md-6"><label class="form-label">Porto attuale (ID)</label><input class="form-control" type="number" @bind="currentPortId" /></div>
+                <div class="col-12"><label class="form-label">Categoria MSC (codice numerico)</label><input class="form-control" type="number" @bind="categoryCode" /></div>
+            </div>
+            <button class="btn btn-primary mt-4" @onclick="CreateContainerAsync">＋ Crea container</button>
+        </div>
+    </div>
+
+    <div class="ibl-card mt-4">
+        <h3 class="mb-4">⚙ Stato sistema</h3>
+        <div class="ibl-grid-4">
+            <div class="ibl-mini-stat text-center"><div class="fs-2 fw-bold ibl-success">Online</div><div class="ibl-muted text-uppercase small">API Backend</div></div>
+            <div class="ibl-mini-stat text-center"><div class="fs-2 fw-bold">MySQL</div><div class="ibl-muted text-uppercase small">Database XAMPP</div></div>
+            <div class="ibl-mini-stat text-center"><div class="fs-2 fw-bold" style="color:var(--ibl-cyan)">v2.0</div><div class="ibl-muted text-uppercase small">Versione IBL</div></div>
+            <div class="ibl-mini-stat text-center"><div class="fs-2 fw-bold" style="color:var(--ibl-orange)">3</div><div class="ibl-muted text-uppercase small">Ruoli utente</div></div>
+        </div>
+    </div>
+}
+
+@code {
+    private string userFullName = string.Empty;
+    private string userCompany = string.Empty;
+    private string userTaxCode = string.Empty;
+    private string userEmail = string.Empty;
+    private string userPassword = string.Empty;
+    private string selectedRole = "Employee";
+    private string? userMessage;
+    private bool userSuccess;
+
+    private string containerNumber = "TEST1234567";
+    private string agencyCode = "MSC-AG-2001";
+    private string agentCode = "AG001";
+    private int categoryCode = 1;
+    private int currentPortId = 1;
+    private string? containerMessage;
+    private bool containerSuccess;
+
+    private async Task CreateUserAsync()
+    {
+        try
+        {
+            var role = selectedRole switch
+            {
+                "Admin" => UserRole.Admin,
+                "Customer" => UserRole.Customer,
+                _ => UserRole.Employee
+            };
+            await Auth.CreateUserAsync(userFullName, userEmail, userPassword, role, userCompany, userTaxCode);
+            userSuccess = true;
+            userMessage = "Account creato correttamente.";
+        }
+        catch (Exception ex)
+        {
+            userSuccess = false;
+            userMessage = ex.Message;
+        }
+    }
+
+    private async Task CreateContainerAsync()
+    {
+        try
+        {
+            var id = await Api.CreateContainerAsync(new CreateContainerRequest
+            {
+                ContainerNumber = containerNumber,
+                AgencyCode = agencyCode,
+                AgentCode = agentCode,
+                CategoryCode = categoryCode,
+                CurrentPortId = currentPortId
+            });
+            containerSuccess = true;
+            containerMessage = $"Container creato correttamente con ID {id}.";
+        }
+        catch (Exception ex)
+        {
+            containerSuccess = false;
+            containerMessage = ex.Message;
+        }
+    }
+}

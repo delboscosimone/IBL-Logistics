@@ -1,0 +1,27 @@
+@page "/dashboard"
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+<div class="ibl-card">
+    <h1 class="ibl-page-title">Dashboard</h1>
+    <p class="ibl-muted fs-5">Reindirizzamento alla dashboard corretta in base al ruolo utente.</p>
+</div>
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender || Auth.CurrentUser is null)
+        {
+            return;
+        }
+
+        var target = Auth.CurrentUser.Role switch
+        {
+            UserRole.Admin => "/admin",
+            UserRole.Employee => "/employee",
+            UserRole.Customer => "/customer",
+            _ => "/"
+        };
+        Nav.NavigateTo(target);
+    }
+}

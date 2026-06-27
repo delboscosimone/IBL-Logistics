@@ -1,0 +1,54 @@
+@page "/categories"
+@inject ApiClient Api
+
+<div class="mb-4">
+    <h1 class="ibl-page-title">Categorie MSC</h1>
+    <p class="ibl-muted fs-5">Catalogo operativo delle categorie con setpoint temperatura, umidità e icone identificative.</p>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(error))
+{
+    <div class="alert alert-danger">@error</div>
+}
+else if (categories.Count == 0)
+{
+    <div class="ibl-card">Caricamento categorie...</div>
+}
+else
+{
+    <div class="ibl-grid-3">
+        @foreach (var category in categories)
+        {
+            <div class="ibl-card">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <img src="@category.ResolvedIconUrl" alt="icona categoria" style="width:42px;height:42px" />
+                    <div>
+                        <div class="ibl-stat-title">Codice @category.Code</div>
+                        <h3 class="mb-0">@category.DisplayName</h3>
+                    </div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-6"><div class="ibl-card-soft"><div class="ibl-stat-title">Temp.</div><div class="fs-4 fw-bold">@category.DefaultTemperatureSetpoint °C</div></div></div>
+                    <div class="col-6"><div class="ibl-card-soft"><div class="ibl-stat-title">Umidità</div><div class="fs-4 fw-bold">@category.DefaultHumiditySetpoint %</div></div></div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<CategoryInfoDto> categories = new();
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            categories = await Api.GetCategoriesAsync();
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

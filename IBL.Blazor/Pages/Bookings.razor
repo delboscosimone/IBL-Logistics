@@ -1,0 +1,75 @@
+@page "/bookings"
+@inject ApiClient Api
+
+<div class="mb-4">
+    <h1 class="ibl-page-title">Booking</h1>
+    <p class="ibl-muted fs-5">Ricerca e consultazione prenotazioni con porti, date e container associati.</p>
+</div>
+
+<div class="ibl-grid-2">
+    <div class="ibl-card">
+        <label class="form-label">Ricerca booking per ID</label>
+        <div class="d-flex gap-2">
+            <input class="form-control" type="number" @bind="bookingId" />
+            <button class="btn btn-primary" @onclick="SearchAsync">Cerca</button>
+        </div>
+    </div>
+    <div class="ibl-card">
+        <h3>Risultato</h3>
+        @if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="alert alert-danger mt-3">@error</div>
+        }
+        else if (booking is null)
+        {
+            <p class="ibl-muted mb-0">Nessun booking caricato.</p>
+        }
+        else
+        {
+            <div class="ibl-card-soft mt-3">
+                <h2 class="fw-bold">@booking.BookingNumber</h2>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6"><strong>Partenza:</strong><br /><span class="ibl-muted">@booking.OriginPortDisplay · @booking.ShippingDate.ToString("dd/MM/yyyy")</span></div>
+                    <div class="col-md-6"><strong>Arrivo stimato:</strong><br /><span class="ibl-muted">@booking.DestinationPortDisplay · @booking.EstimatedArrivalDate.ToString("dd/MM/yyyy")</span></div>
+                    <div class="col-12"><strong>Cliente:</strong><br /><span class="ibl-muted">@booking.CustomerInformations</span></div>
+                </div>
+                <h5>Container associati</h5>
+                @if (booking.ContainerSummaries.Count == 0)
+                {
+                    <p class="ibl-muted">Nessun container associato.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead><tr><th>ID</th><th>Numero</th><th>Categoria</th><th>Peso</th><th>Volume</th></tr></thead>
+                            <tbody>@foreach (var c in booking.ContainerSummaries){<tr><td>@c.Id</td><td>@c.ContainerNumber</td><td>@c.ProductCategoryLabel</td><td>@c.TotalWeight</td><td>@c.TotalVolume</td></tr>}</tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private int bookingId = 1;
+    private BookingSummaryDto? booking;
+    private string? error;
+
+    protected override async Task OnInitializedAsync() => await SearchAsync();
+
+    private async Task SearchAsync()
+    {
+        error = null;
+        booking = null;
+        try
+        {
+            booking = await Api.GetBookingByIdAsync(bookingId);
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

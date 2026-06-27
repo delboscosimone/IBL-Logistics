@@ -1,0 +1,53 @@
+@page "/create-container"
+@inject AuthStateService Auth
+@inject ApiClient Api
+
+@if (Auth.CurrentUser?.Role is not UserRole.Admin)
+{
+    <div class="alert alert-danger">Devi effettuare il login come admin per creare container.</div>
+}
+else
+{
+    <h1 class="ibl-page-title mb-3">Crea container</h1>
+    <div class="ibl-card">
+        @if (!string.IsNullOrWhiteSpace(message))
+        {
+            <div class="alert @(success ? "alert-success" : "alert-danger")">@message</div>
+        }
+        <div class="row g-3">
+            <div class="col-lg-4"><label class="form-label">Container Number</label><input class="form-control" @bind="request.ContainerNumber" /></div>
+            <div class="col-lg-4"><label class="form-label">Agency Code</label><input class="form-control" @bind="request.AgencyCode" /></div>
+            <div class="col-lg-4"><label class="form-label">Agent Code</label><input class="form-control" @bind="request.AgentCode" /></div>
+            <div class="col-lg-4"><label class="form-label">Category Code</label><input class="form-control" type="number" @bind="request.CategoryCode" /></div>
+            <div class="col-lg-8"><label class="form-label">Porto attuale</label><select class="form-select" @bind="request.CurrentPortId"><option value="">Seleziona porto...</option>@foreach (var port in ports){<option value="@port.Id">@port.Name (@port.Nation) - @port.Code</option>}</select></div>
+        </div>
+        <button class="btn btn-success mt-4" @onclick="CreateAsync">Crea container</button>
+    </div>
+}
+
+@code {
+    private CreateContainerRequest request = new();
+    private List<PortDto> ports = new();
+    private string? message;
+    private bool success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ports = await Api.GetPortsAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        try
+        {
+            var id = await Api.CreateContainerAsync(request);
+            success = true;
+            message = $"Container creato correttamente con ID {id}.";
+        }
+        catch (Exception ex)
+        {
+            success = false;
+            message = ex.Message;
+        }
+    }
+}

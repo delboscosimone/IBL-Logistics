@@ -1,0 +1,120 @@
+@page "/login"
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+
+<div class="ibl-register-shell">
+    <img src="/img/ibl-logo.svg" class="ibl-login-logo" alt="IBL logo" />
+    <div class="text-center mb-4">
+        <h3 class="fw-bold mb-1">International BlueHarbor Logistics</h3>
+        <p class="ibl-muted">Piattaforma di gestione logistica marittima</p>
+    </div>
+
+    <div class="ibl-grid-2">
+        <div class="ibl-card">
+            <h1 class="fw-bold mb-2">Accedi al tuo account</h1>
+            <p class="ibl-muted mb-4">Inserisci le credenziali per accedere alla piattaforma.</p>
+
+            @if (!string.IsNullOrWhiteSpace(loginMessage))
+            {
+                <div class="alert @(loginSuccess ? "alert-success" : "alert-danger")">@loginMessage</div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input class="form-control" placeholder="es. admin@ibl.local" @bind="loginEmail" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input class="form-control" type="password" placeholder="••••••••" @bind="loginPassword" />
+            </div>
+            <button class="btn btn-primary w-100 fs-5" @onclick="LoginAsync">↪ Accedi</button>
+
+            <div class="ibl-demo">
+                <div class="ibl-muted fw-bold text-uppercase small mb-3">🔑 Account demo</div>
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2"><span class="ibl-pill admin">ADMIN</span><code>admin@ibl.local / Admin123!</code></div>
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-2"><span class="ibl-pill employee">DIPENDENTE</span><code>employee@ibl.local / Employee123!</code></div>
+                <div class="d-flex align-items-center justify-content-between gap-2"><span class="ibl-pill customer">CLIENTE</span><code>customer@ibl.local / Customer123!</code></div>
+            </div>
+        </div>
+
+        <div class="ibl-card">
+            <h1 class="fw-bold mb-2">Registra un nuovo cliente</h1>
+            <p class="ibl-muted mb-4">Crea un account cliente con anagrafica aziendale completa.</p>
+
+            @if (!string.IsNullOrWhiteSpace(registerMessage))
+            {
+                <div class="alert @(registerSuccess ? "alert-success" : "alert-danger")">@registerMessage</div>
+            }
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Nome completo</label>
+                    <input class="form-control" placeholder="Mario Rossi" @bind="registerFullName" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Azienda</label>
+                    <input class="form-control" placeholder="Rossi Logistics S.r.l." @bind="registerCompany" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Partita IVA / Codice Fiscale</label>
+                    <input class="form-control" placeholder="IT12345678901" @bind="registerTaxCode" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email aziendale</label>
+                    <input class="form-control" placeholder="info@rossilogistics.it" @bind="registerEmail" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Password</label>
+                    <input class="form-control" type="password" placeholder="Minimo 8 caratteri" @bind="registerPassword" />
+                </div>
+            </div>
+            <button class="btn btn-outline-primary mt-4" @onclick="RegisterCustomerAsync">👤+ Registra cliente</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string loginEmail = "admin@ibl.local";
+    private string loginPassword = "Admin123!";
+    private string? loginMessage;
+    private bool loginSuccess;
+
+    private string registerFullName = string.Empty;
+    private string registerCompany = string.Empty;
+    private string registerTaxCode = string.Empty;
+    private string registerEmail = string.Empty;
+    private string registerPassword = string.Empty;
+    private string? registerMessage;
+    private bool registerSuccess;
+
+    private async Task LoginAsync()
+    {
+        var result = await Auth.LoginAsync(loginEmail, loginPassword);
+        loginSuccess = result.Success;
+        loginMessage = result.Message;
+        if (result.Success)
+        {
+            Nav.NavigateTo("/dashboard");
+        }
+    }
+
+    private async Task RegisterCustomerAsync()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(registerFullName) || string.IsNullOrWhiteSpace(registerEmail) || string.IsNullOrWhiteSpace(registerPassword))
+            {
+                throw new InvalidOperationException("Compila almeno nome completo, email e password.");
+            }
+            await Auth.RegisterCustomerAsync(registerFullName, registerEmail, registerPassword, registerCompany, registerTaxCode);
+            registerSuccess = true;
+            registerMessage = "Cliente registrato correttamente. Ora può effettuare il login.";
+            registerFullName = registerCompany = registerTaxCode = registerEmail = registerPassword = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            registerSuccess = false;
+            registerMessage = ex.Message;
+        }
+    }
+}
